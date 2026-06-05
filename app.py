@@ -1,12 +1,17 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from rag.chunks import chunk_text
-from rag.embedder import model, embed_document
+from rag.embedder import model
 from rag.generator import generate
+from pypdf import PdfReader
 
 # --- CONFIG ---
+HOST = '127.0.0.1'
+PORT = 5500
 app = Flask(__name__, static_folder='static')
+CORS(app)
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -19,7 +24,7 @@ def allowed_file(filename: str) -> bool:
 # --- APP ---
 @app.route('/')
 def index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return 'Main'
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -38,11 +43,27 @@ def upload():
     file.save(filepath)
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-            content_chunks = chunk_text(content)
+        ext = filename.rsplit('.', 1)[1].lower()
+
+        if ext == 'txt':
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+        elif ext == 'pdf':
+            reader = PdfReader(filepath)
+
+            content = ""
+            for page in reader.pages:
+                content += page.extract_text() or ""
+                content += "\n"
+
+        else:
+            return jsonify({'error': 'Unsupported file type'}), 400
+
+        content_chunks = chunk_text(content)
 
         chunk_embeddings = model.encode(content_chunks)
+
         for chunk, embedding in zip(content_chunks, chunk_embeddings):
             VECTOR_DB.append({
                 'text': chunk,
@@ -52,10 +73,11 @@ def upload():
         return jsonify({
             'status': 'success',
             'message': f'Successfully processed {filename}',
+            'chunks': len(content_chunks)
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/query', methods=['POST'])
 def query():
@@ -75,11 +97,14 @@ def query():
         ai_response = generate(user_question, VECTOR_DB)
 
         return jsonify({
-            "status": "success",
-            "question": user_question,
-            "answer": ai_response
+            'status': 'success',
+            'question': user_question,
+            'answer': ai_response
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+app.run(host=HOST, port=PORT, debug=True)
 # -----------
+

@@ -3,114 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple RAG Tester</title>
+    <title>RAG Document Assistant</title>
+
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
-        .section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-        h2 { margin-top: 0; color: #333; }
-        input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        button { background: #007BFF; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        .status { margin-top: 10px; font-weight: bold; }
-        .success { color: green; }
-        .error { color: red; }
-        #answerBox { background: #e9ecef; padding: 15px; border-left: 5px solid #007BFF; display: none; white-space: pre-wrap; margin-top: 15px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .container {
+            width: 800px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            resize: none;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .response-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .loading {
+            color: orange;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
     </style>
 </head>
 <body>
 
-    <h1>🤖 Local RAG System Tester</h1>
-    <p>Upload a text document first, then ask questions about its content.</p>
+<div class="container">
 
+    <h1>📚 RAG Document Assistant</h1>
+
+    <!-- Upload Section -->
     <div class="section">
-        <h2>1. Upload Document</h2>
-        <input type="file" id="fileInput" accept=".txt">
-        <button onclick="uploadFile()">Upload & Ingest</button>
+        <h2>Upload Document</h2>
+
+        <input type="file" id="fileInput">
+
+        <button onclick="uploadFile()">
+            Upload
+        </button>
+
         <div id="uploadStatus" class="status"></div>
     </div>
 
+    <!-- Question Section -->
     <div class="section">
-        <h2>2. Ask a Question</h2>
-        <input type="text" id="queryInput" placeholder="e.g., What is the main topic of the document?">
-        <button onclick="askQuestion()">Submit Question</button>
+        <h2>Ask a Question</h2>
+
+        <textarea
+            id="question"
+            placeholder="Ask something about the uploaded document..."
+        ></textarea>
+
+        <br><br>
+
+        <button onclick="askQuestion()">
+            Ask
+        </button>
+
         <div id="queryStatus" class="status"></div>
-        <div id="answerBox"></div>
+
+        <div id="answerBox" class="response-box" style="display:none;">
+        </div>
     </div>
 
-    <script>
-        async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const statusDiv = document.getElementById('uploadStatus');
+</div>
 
-            if (fileInput.files.length === 0) {
-                statusDiv.className = "status error";
-                statusDiv.innerText = "Please select a file first.";
-                return;
-            }
+<script>
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+async function uploadFile() {
 
-            statusDiv.className = "status";
-            statusDiv.innerText = "Uploading and embedding file... please wait...";
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('uploadStatus');
 
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+    if (!fileInput.files.length) {
+        status.className = "status error";
+        status.textContent = "Please choose a file.";
+        return;
+    }
 
-                if (response.ok) {
-                    statusDiv.className = "status success";
-                    statusDiv.innerText = `Success! Added ${data.chunks_added} chunks. (Total in DB: ${data.total_chunks_in_db})`;
-                } else {
-                    statusDiv.className = "status error";
-                    statusDiv.innerText = `Error: ${data.error}`;
-                }
-            } catch (err) {
-                statusDiv.className = "status error";
-                statusDiv.innerText = `Network Error: ${err.message}`;
-            }
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    status.className = "status loading";
+    status.textContent = "Uploading...";
+
+    try {
+
+        const response = await fetch('http://127.0.0.1:5500/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error);
         }
 
-        async function askQuestion() {
-            const queryInput = document.getElementById('queryInput');
-            const statusDiv = document.getElementById('queryStatus');
-            const answerBox = document.getElementById('answerBox');
+        status.className = "status success";
+        status.textContent = data.message;
 
-            const question = queryInput.value.trim();
-            if (!question) {
-                statusDiv.className = "status error";
-                statusDiv.innerText = "Please type a question.";
-                return;
-            }
+    } catch (error) {
 
-            statusDiv.className = "status";
-            statusDiv.innerText = "Thinking...";
-            answerBox.style.display = "none";
+        status.className = "status error";
+        status.textContent = error.message;
+    }
+}
 
-            try {
-                const response = await fetch('/query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
-                });
-                const data = await response.json();
+async function askQuestion() {
 
-                if (response.ok) {
-                    statusDiv.innerText = "";
-                    answerBox.style.display = "block";
-                    answerBox.innerText = data.answer;
-                } else {
-                    statusDiv.className = "status error";
-                    statusDiv.innerText = `Error: ${data.error}`;
-                }
-            } catch (err) {
-                statusDiv.className = "status error";
-                statusDiv.innerText = `Network Error: ${err.message}`;
-            }
+    const question = document.getElementById('question').value;
+    const status = document.getElementById('queryStatus');
+    const answerBox = document.getElementById('answerBox');
+
+    if (!question.trim()) {
+        status.className = "status error";
+        status.textContent = "Please enter a question.";
+        return;
+    }
+
+    status.className = "status loading";
+    status.textContent = "Thinking...";
+
+    answerBox.style.display = "none";
+
+    try {
+
+        const response = await fetch('http://127.0.0.1:5500/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                question: question
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error);
         }
-    </script>
+
+        status.className = "status success";
+        status.textContent = "Answer generated.";
+
+        answerBox.style.display = "block";
+        answerBox.innerHTML = `
+            <strong>Question:</strong><br>
+            ${data.question}
+            <br><br>
+            <strong>Answer:</strong><br>
+            ${data.answer}
+        `;
+
+    } catch (error) {
+
+        status.className = "status error";
+        status.textContent = error.message;
+    }
+}
+
+</script>
+
 </body>
 </html>

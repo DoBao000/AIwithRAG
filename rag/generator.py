@@ -3,7 +3,7 @@ import torch
 from google import genai
 from dotenv import load_dotenv
 load_dotenv()
-from embedder import model
+from rag.embedder import model
 
 client = genai.Client(api_key=os.getenv('API_KEY'))
 

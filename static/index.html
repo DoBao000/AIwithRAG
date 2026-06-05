@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple RAG Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+        .section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
+        h2 { margin-top: 0; color: #333; }
+        input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { background: #007BFF; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .status { margin-top: 10px; font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+        #answerBox { background: #e9ecef; padding: 15px; border-left: 5px solid #007BFF; display: none; white-space: pre-wrap; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <h1>🤖 Local RAG System Tester</h1>
+    <p>Upload a text document first, then ask questions about its content.</p>
+
+    <div class="section">
+        <h2>1. Upload Document</h2>
+        <input type="file" id="fileInput" accept=".txt">
+        <button onclick="uploadFile()">Upload & Ingest</button>
+        <div id="uploadStatus" class="status"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Ask a Question</h2>
+        <input type="text" id="queryInput" placeholder="e.g., What is the main topic of the document?">
+        <button onclick="askQuestion()">Submit Question</button>
+        <div id="queryStatus" class="status"></div>
+        <div id="answerBox"></div>
+    </div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (fileInput.files.length === 0) {
+                statusDiv.className = "status error";
+                statusDiv.innerText = "Please select a file first.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            statusDiv.className = "status";
+            statusDiv.innerText = "Uploading and embedding file... please wait...";
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.className = "status success";
+                    statusDiv.innerText = `Success! Added ${data.chunks_added} chunks. (Total in DB: ${data.total_chunks_in_db})`;
+                } else {
+                    statusDiv.className = "status error";
+                    statusDiv.innerText = `Error: ${data.error}`;
+                }
+            } catch (err) {
+                statusDiv.className = "status error";
+                statusDiv.innerText = `Network Error: ${err.message}`;
+            }
+        }
+
+        async function askQuestion() {
+            const queryInput = document.getElementById('queryInput');
+            const statusDiv = document.getElementById('queryStatus');
+            const answerBox = document.getElementById('answerBox');
+
+            const question = queryInput.value.trim();
+            if (!question) {
+                statusDiv.className = "status error";
+                statusDiv.innerText = "Please type a question.";
+                return;
+            }
+
+            statusDiv.className = "status";
+            statusDiv.innerText = "Thinking...";
+            answerBox.style.display = "none";
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerText = "";
+                    answerBox.style.display = "block";
+                    answerBox.innerText = data.answer;
+                } else {
+                    statusDiv.className = "status error";
+                    statusDiv.innerText = `Error: ${data.error}`;
+                }
+            } catch (err) {
+                statusDiv.className = "status error";
+                statusDiv.innerText = `Network Error: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

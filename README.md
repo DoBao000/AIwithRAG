@@ -1,10 +1,10 @@
-# AIwithRAG 🔍
+# AIwithRAG
 
 A Retrieval-Augmented Generation (RAG) application that allows you to upload documents and ask questions about their content using AI-powered semantic search and generation.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 AIwithRAG/
@@ -26,7 +26,7 @@ AIwithRAG/
 
 ---
 
-## ⚙️ Implementation Process
+## Implementation Process
 
 The RAG pipeline works in the following stages:
 
@@ -44,7 +44,7 @@ The RAG pipeline works in the following stages:
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Install dependencies
 
@@ -86,24 +86,9 @@ The `index.html` frontend is served directly from the `static/` folder by Flask.
 
 ---
 
-## ✨ Features
+## Tech Stack
 
-| Feature | Description |
-|---|---|
-| 📄 Document Upload | Supports `.txt` and `.pdf` file formats |
-| ✂️ Text Chunking | Splits documents into manageable chunks for accurate retrieval |
-| 🔢 Semantic Embedding | Converts text to vector embeddings for similarity search |
-| 🔍 Vector Search | In-memory cosine similarity search over document chunks |
-| 🤖 AI Generation | Uses an LLM to generate answers grounded in retrieved context |
-| 🌐 REST API | Flask backend with CORS support for easy frontend integration |
-| 🖥️ Web UI | Clean single-page frontend served via Flask static files |
-
----
-
-## 🛠️ Tech Stack
-
-- **Backend:** Python, Flask, Flask-CORS
-- **PDF Parsing:** PyPDF2
+- **Backend:** Python, Flask
 - **Embeddings:** Sentence Transformers (via `rag/embedder.py`)
 - **Generation:** LLM API (configured in `rag/generator.py`)
 - **Frontend:** HTML/CSS/JS (`static/index.html`)

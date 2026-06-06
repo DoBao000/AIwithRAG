@@ -24,11 +24,10 @@ def allowed_file(filename: str) -> bool:
 # --- APP ---
 @app.route('/')
 def index():
-    return 'Main'
+    return send_from_directory('static', 'index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    """Receive a file, chunk it, embed it, and store the FAISS index."""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part in request'}), 400
 
@@ -52,17 +51,17 @@ def upload():
         elif ext == 'pdf':
             reader = PdfReader(filepath)
 
-            content = ""
+            content = ''
             for page in reader.pages:
-                content += page.extract_text() or ""
-                content += "\n"
+                content += page.extract_text() or ''
+                content += '\n'
 
         else:
             return jsonify({'error': 'Unsupported file type'}), 400
 
         content_chunks = chunk_text(content)
-
         chunk_embeddings = model.encode(content_chunks)
+        VECTOR_DB.clear()
 
         for chunk, embedding in zip(content_chunks, chunk_embeddings):
             VECTOR_DB.append({
@@ -89,7 +88,7 @@ def query():
     if user_question.strip() == '':
         return jsonify({'error': 'Question cannot be empty'}), 400
 
-    # 2. Check if the database actually has documents uploaded yet
+    # Check if the database actually has documents uploaded yet
     if not VECTOR_DB:
         return jsonify({'error': 'No documents have been uploaded yet. Please upload a file first.'}), 400
 
@@ -107,4 +106,3 @@ def query():
 
 app.run(host=HOST, port=PORT, debug=True)
 # -----------
-

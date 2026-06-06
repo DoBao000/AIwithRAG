@@ -18,17 +18,17 @@ def retrieve(query, processed_chunks, top_k=3):
     return [processed_chunks[i]['text'] for i in top_indices]
 
 def generate(query, processed_chunks):
-    # 1. Fetch relevant context from your embedder
+    # Fetch relevant context from your embedder
     relevant_chunks = retrieve(query, processed_chunks)
     context = "\n\n".join(relevant_chunks)
 
-    # 2. Construct the prompt
-    prompt = f'''Answer the question based on the context below.
+    # Construct the prompt
+    prompt = f'''Think and answer the question based on the context below.
                 Context: {context}
                 Question: {query}
             '''
 
-    # 3. Call the Gemini API
+    # Call the Gemini API
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,

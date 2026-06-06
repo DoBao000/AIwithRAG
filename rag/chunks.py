@@ -2,7 +2,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50):
     if chunk_size <= 0 or overlap < 0:
         raise ValueError('chunk_size must be > 0 and overlap >= 0')
     if overlap >= chunk_size:
-        raise ValueError('overlap cannot be smaller than chunk_size')
+        raise ValueError('overlap cannot be greater than chunk_size')
 
     chunks = []
     start = 0
